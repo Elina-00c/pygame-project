@@ -53,6 +53,38 @@ class Player(pygame.sprite.Sprite):
         pass
 
 
+class Bullet(pygame.sprite.Sprite):
+    def init(self, x, y):
+        pygame.sprite.Sprite.init(self)
+        self.speed = 10
+
+    def func(self):
+        pass
+
+
+class Health(pygame.sprite.Sprite):
+    def init(self, health, maxx):
+        pygame.sprite.Sprite.init(self)
+        self.health = health
+        self.maxx = maxx
+
+
+class Exit:
+    pass
+
+
+class Title:
+    pass
+
+
+class Level:
+    pass
+
+
+class Barrier:
+    pass
+
+
 player = Player(50, 237, 0.2)
 
 speed = 8
