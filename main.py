@@ -33,6 +33,25 @@ class Player(pygame.sprite.Sprite):
     def draw(self):
         surface.blit(self.walk_right[self.player_anim_count], self.rect)
 
+    def move(self, moving_left, moving_right):
+        dx = 0
+        dy = 0
+
+        if moving_left:
+            dx = -self.speed
+
+        elif moving_right:
+            dx = self.speed
+
+    def shoot(self):
+        pass
+
+    def check_live(self):
+        pass
+
+    def restart(self):
+        pass
+
 
 player = Player(50, 237, 0.2)
 
