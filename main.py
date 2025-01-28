@@ -54,9 +54,19 @@ class Player(pygame.sprite.Sprite):
 
 
 class Bullet(pygame.sprite.Sprite):
-    def init(self, x, y):
-        pygame.sprite.Sprite.init(self)
-        self.speed = 10
+    def __init__(self, x, y, direction, bullet_image, speed=5):
+        super().__init__()
+        self.image = pygame.image.load(bullet_image)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.direction = direction
+        self.speed = speed
+
+    def update(self):
+        self.rect.x += self.speed * self.direction
+
+        if self.rect.right < 0 or self.rect.left > 650:
+            self.kill()
 
     def func(self):
         pass
