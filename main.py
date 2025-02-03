@@ -1,4 +1,5 @@
 import pygame
+from pyvidplayer2 import Video
 import random
 
 pygame.init()
@@ -13,12 +14,15 @@ pygame.display.set_icon(icone)
 background = pygame.image.load('files/result_a5439e1.jpeg')
 sound = pygame.mixer.Sound('files/music.mp3')
 dead_img = pygame.image.load('files/dead.png')
-dead_img = pygame.transform.scale(dead_img,(int(dead_img.get_width() * 0.1), int(dead_img.get_height() * 0.1)))
+dead_img = pygame.transform.scale(dead_img, (int(dead_img.get_width() * 0.1), int(dead_img.get_height() * 0.1)))
 sound.play(-1)
 start_game = False
 
+vid = Video('files/video.mp4')
+win = pygame.display.set_mode((1280, 720))
+
 tile_size = 30
-game_over = 0
+game_over = False
 
 
 # def draw_grid():
@@ -83,24 +87,29 @@ word_data = [
 world = World(word_data)
 
 
-class Button:
-    window_size = (827, 500)
-    screen = pygame.display.set_mode(window_size)
+class Button(pygame.sprite.Sprite):
+    def __init__(self, x, y, type):
+        pygame.sprite.Sprite.__init__(self)
+        self.x = x
+        self.y = y
+        self.type = type
+        window_size = (827, 500)
+        self.screen = pygame.display.set_mode(window_size)
 
-    # Создаем объект шрифта
-    font = pygame.font.Font(None, 24)
+        # Создаем объект шрифта
+        font = pygame.font.Font(None, 24)
 
-    # Создайте поверхность для кнопки
-    button_surface = pygame.Surface((150, 50))
+        # Создайте поверхность для кнопки
+        self.button_surface = pygame.Surface((150, 50))
 
-    # Отображение текста на кнопке
-    text = font.render("Start", True, (0, 0, 0))
-    text_rect = text.get_rect(
-        center=(button_surface.get_width() / 2,
-                button_surface.get_height() / 2))
+        # Отображение текста на кнопке
+        self.text = font.render(self.type, True, (0, 0, 0))
+        self.text_rect = self.text.get_rect(
+            center=(self.button_surface.get_width() / 2,
+                    self.button_surface.get_height() / 2))
 
-    # Создайте объект pygame.Rect, который представляет границы кнопки
-    button_rect = pygame.Rect(125, 125, 150, 50)
+        # Создайте объект pygame.Rect, который представляет границы кнопки
+        self.button_rect = pygame.Rect(self.x, self.y, 200, 50)
 
 
 class Player(pygame.sprite.Sprite):
@@ -185,6 +194,9 @@ class Player(pygame.sprite.Sprite):
 
         surface.blit(self.image, self.rect)
 
+    def player_dead(self):
+        surface.blit(dead_img, (player.rect.x, player.rect.y))
+
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, enemy_x, enemy_y, size):
@@ -193,7 +205,7 @@ class Enemy(pygame.sprite.Sprite):
         self.enemy_rect = [enemy_x, enemy_y]
         self.update_time = pygame.time.get_ticks()
         self.enemy_anim_count = 0
-        for i in range(1, 10):
+        for i in range(1, 4):
             img = pygame.image.load(f'files/enemy/img{i}.png')
             img = pygame.transform.scale(img, (int(img.get_width() * size), int(img.get_height() * size)))
             self.animation.append(img)
@@ -204,7 +216,7 @@ class Enemy(pygame.sprite.Sprite):
         surface.blit(self.animation[self.enemy_anim_count], self.enemy_rect)
 
     def animation_enemy(self):
-        animation_clock = 100
+        animation_clock = 125
         if pygame.time.get_ticks() - self.update_time > animation_clock:
             self.update_time = pygame.time.get_ticks()
             self.enemy_anim_count += 1
@@ -220,7 +232,7 @@ class Bullet(pygame.sprite.Sprite):
         pass
 
 
-class HealthBar():
+class HealthBar:
     def __init__(self, x, y, health, max_health):
         self.x = x
         self.y = y
@@ -232,9 +244,9 @@ class HealthBar():
         self.health = health
         # calculate health ratio
         ratio = self.health / self.max_health
-        # pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
-        # pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
-        # pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
+        pygame.draw.rect(surface, (0, 0, 0), (self.x - 2, self.y - 2, 154, 24))
+        pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y, 150, 20))
+        pygame.draw.rect(surface, (0, 128, 0), (self.x, self.y, 150 * ratio, 20))
 
 
 class Exit:
@@ -254,40 +266,54 @@ class Barrier:
 
 
 player = Player(0, 160, 0.4)
-button = Button()
-enemy_list = []
-enemy = Enemy(270, 375, 0.15)
-enemy_list.append(enemy.enemy_rect)
-enemy1 = Enemy(349, 230, 0.15)
-enemy_list.append(enemy1.enemy_rect)
-enemy2 = Enemy(349, 145, 0.15)
-enemy_list.append(enemy2.enemy_rect)
+button = Button(315, 150, "Start")
+button1 = Button(315, 230, "Exit")
+enemy = Enemy(330, 445, 0.05)
+enemy1 = Enemy(415, 298, 0.05)
+enemy2 = Enemy(580, 298, 0.05)
 
 clock = pygame.time.Clock()
+healthbar = HealthBar(30, 30, 4, 4)
 
+count = 0
 running = True
 flag = True
 while running:
     clock.tick(90)
     # start window
     if not start_game:
+        surface.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                vid.close()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 # Вызовите функцию on_mouse_button_down()
                 if button.button_rect.collidepoint(event.pos):
                     start_game = True
+                elif button1.button_rect.collidepoint(event.pos):
+                    running = False
         if button.button_rect.collidepoint(pygame.mouse.get_pos()):
-            pygame.draw.rect(button.button_surface, (127, 255, 212), (1, 1, 148, 48))
+            pygame.draw.rect(button.button_surface, (216, 177, 191), (1, 1, 148, 48))
         else:
             pygame.draw.rect(button.button_surface, (0, 0, 0), (0, 0, 150, 50))
             pygame.draw.rect(button.button_surface, (255, 255, 255), (1, 1, 148, 48))
             pygame.draw.rect(button.button_surface, (0, 0, 0), (1, 1, 148, 1), 2)
-            pygame.draw.rect(button.button_surface, (0, 100, 0), (1, 48, 148, 10), 2)
+            pygame.draw.rect(button.button_surface, (216, 177, 191), (1, 48, 148, 10), 2)
 
         button.button_surface.blit(button.text, button.text_rect)
         button.screen.blit(button.button_surface, (button.button_rect.x, button.button_rect.y))
+
+        if button1.button_rect.collidepoint(pygame.mouse.get_pos()):
+            pygame.draw.rect(button1.button_surface, (216, 177, 191), (1, 1, 148, 48))
+        else:
+            pygame.draw.rect(button1.button_surface, (0, 0, 0), (0, 0, 150, 50))
+            pygame.draw.rect(button1.button_surface, (255, 255, 255), (1, 1, 148, 48))
+            pygame.draw.rect(button1.button_surface, (0, 0, 0), (1, 1, 148, 1), 2)
+            pygame.draw.rect(button1.button_surface, (216, 177, 191), (1, 48, 148, 10), 2)
+
+        button1.button_surface.blit(button1.text, button1.text_rect)
+        button1.screen.blit(button1.button_surface, (button1.button_rect.x, button1.button_rect.y))
         pygame.display.update()
     # start window
     else:
@@ -298,19 +324,32 @@ while running:
         surface.blit(background, (0, 0))
 
         world.draw()
-
-        player.move()
+        healthbar.draw(4)
+        if not game_over:
+            player.move()
         enemy.draw_enemy()
         enemy1.draw_enemy()
         enemy2.draw_enemy()
         enemy.animation_enemy()
         enemy1.animation_enemy()
-        if abs(enemy.enemy_rect[0] - 9 - player.rect.x < 15) and abs(enemy.enemy_rect[1] + 285 - player.rect.y < 15):
-            surface.blit(dead_img, (player.rect.x, player.rect.y))
-        if abs(enemy1.enemy_rect[0] - 9 - player.rect.x < 15) and abs(enemy1.enemy_rect[1] + 285 - player.rect.y < 15):
-            surface.blit(dead_img, (player.rect.x, player.rect.y))
-        if abs(enemy1.enemy_rect[0] - 9 - player.rect.x < 15) and abs(enemy1.enemy_rect[1] + 285 - player.rect.y < 15):
-            surface.blit(dead_img, (player.rect.x, player.rect.y))
+        enemy2.animation_enemy()
+        if abs(enemy.enemy_rect[0] - player.rect.x < 20) and abs(enemy.enemy_rect[1] - player.rect.y < 20):
+            healthbar.draw(0)
+            game_over = True
+        if abs(enemy1.enemy_rect[0] - player.rect.x < 20) and abs(enemy1.enemy_rect[1] - player.rect.y < 20):
+            healthbar.draw(0)
+            game_over = True
+        if abs(enemy2.enemy_rect[0] - player.rect.x < 20) and abs(enemy2.enemy_rect[1] - player.rect.y < 20):
+            healthbar.draw(0)
+            game_over = True
+        if game_over:
+            player.player_dead()
+        key = pygame.key.get_pressed()
+        if key[pygame.K_q]:
+            start_game = False
+            player.rect.x = 0
+            player.rect.y = 160
+            game_over = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
