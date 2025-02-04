@@ -58,81 +58,49 @@ level2_data = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
+
 class World:
-    def __init__(self, data):
-        grass_image = pygame.image.load('files/gress.jpg')
-        water_image = pygame.image.load('files/water.png')
-        coin_image = pygame.image.load('files/coin.png')
-
-        self.tile_list = []
-        self.coins = []
-        self.coin_positions = []
-
+    def init(self, data):
+        self.ground_tiles = []
+        self.water_tiles = []
+        self.coin_tiles = []
         row_count = 0
         for row in data:
             col_count = 0
             for tile in row:
-                if tile == 1:  # Обычный блок
-                    img = pygame.transform.scale(grass_image, (tile_size, tile_size))
+                if tile == 1:
+                    gress_image = pygame.image.load('files/gress.jpg')
+                    img = pygame.transform.scale(gress_image, (tile_size, tile_size))
                     img_rect = img.get_rect()
                     img_rect.x = col_count * tile_size
                     img_rect.y = row_count * tile_size
-                    self.tile_list.append((img, img_rect))
-                elif tile == 2:  # Вода
+                    self.ground_tiles.append((img, img_rect))
+                elif tile == 2:
+                    water_image = pygame.image.load('files/water.png')
                     img = pygame.transform.scale(water_image, (tile_size, tile_size))
                     img_rect = img.get_rect()
                     img_rect.x = col_count * tile_size
                     img_rect.y = row_count * tile_size
-                    self.tile_list.append((img, img_rect))
-                elif tile == 3:  # Монеты
-                    img_rect = pygame.Rect(col_count * tile_size + tile_size // 4,
-                                           row_count * tile_size + tile_size // 4,
-                                           tile_size // 2, tile_size // 2)
-                    self.coins.append(img_rect)
-                    self.coin_positions.append(img_rect.copy())  # Сохраняем копию позиции
-
-                def reset_coins(self):
-                    """Восстанавливаем монеты при рестарте"""
-                    self.coins = [coin.copy() for coin in self.coin_positions]
-
+                    self.water_tiles.append((img, img_rect))
+                elif tile == 3:
+                    img = pygame.transform.scale(coin_image, (tile_size, tile_size))
+                    img_rect = img.get_rect()
+                    img_rect.x = col_count * tile_size
+                    img_rect.y = row_count * tile_size
+                    self.coin_tiles.append((img, img_rect))
                 col_count += 1
             row_count += 1
+
     def draw(self):
-        for tile in self.tile_list:
+        for tile in self.ground_tiles:
             surface.blit(tile[0], tile[1])
-            # pygame.draw.rect(surface, (255, 255, 255), tile[1], 2)
+        for tile in self.water_tiles:
+            surface.blit(tile[0], tile[1])
+        for tile in self.coin_tiles:
+            surface.blit(tile[0], tile[1])
 
 
-word_data = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0],
-    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-    [1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1],
-    [1, 1, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-]
-
-coin_image = pygame.image.load('files/coin.png')
-coin_width, coin_height = coin_image.get_size()
-coins = []
-for y, row in enumerate(word_data):
-    for x, cell in enumerate(row):
-        if cell == 3:
-            coins.append(pygame.Rect(x * tile_size, y * tile_size, coin_width, coin_height))
-
-
-world = World(word_data)
+world = World(level1_data)
 
 
 class Button:
