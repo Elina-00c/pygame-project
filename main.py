@@ -103,33 +103,26 @@ class World:
 world = World(level1_data)
 
 
-class Button:
-    window_size = (827, 500)
-    screen = pygame.display.set_mode(window_size)
-
-    # Создаем объект шрифта
-    font = pygame.font.Font(None, 24)
-
-    # Создайте поверхность для кнопки
-    button_surface = pygame.Surface((150, 50))
-
-    # Отображение текста на кнопке
-    text = font.render("Start", True, (0, 0, 0))
-    text_rect = text.get_rect(
-        center=(button_surface.get_width() / 2,
-                button_surface.get_height() / 2))
-
-    # Создайте объект pygame.Rect, который представляет границы кнопки
-    button_rect = pygame.Rect(125, 125, 150, 50)
+class Button(pygame.sprite.Sprite):
+    def __init__(self, x, y, text):
+        pygame.sprite.Sprite.__init__(self)
+        self.x = x
+        self.y = y
+        self.text = text
+        window_size = (827, 500)
+        self.screen = pygame.display.set_mode(window_size)
+        font = pygame.font.Font(None, 24)
+        self.button_surface = pygame.Surface((150, 50))
+        self.rendered_text = font.render(self.text, True, (0, 0, 0))
+        self.text_rect = self.rendered_text.get_rect(center=(self.button_surface.get_width()/2,
+                                                              self.button_surface.get_height()/2))
+        self.button_rect = pygame.Rect(self.x, self.y, 150, 50)
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_x, player_y, size):
         pygame.sprite.Sprite.__init__(self)
         self.walk_right = []
-        self.coin_count = 0
-        self.player_start_x = player_x
-        self.player_start_y = player_y
         self.walk_left = []
         self.player_anim_count = 0
         self.count = 0
@@ -149,47 +142,43 @@ class Player(pygame.sprite.Sprite):
         self.vel_y = 0
         self.jumped = False
         self.direction = 0
+        self.health = 3
+        self.invulnerable = False
+        self.invuln_timer = 0
 
-    def move(self, world):
+    def move(self):
         dx = 0
         dy = 0
         walk_cooldown = 5
+        keys = pygame.key.get_pressed()
+        in_water = False
+        for tile in world.water_tiles:
+            if tile[1].colliderect(self.rect):
+                in_water = True
+                break
+        speed = 5 if not in_water else 2.5
+        jump_force = -15 if not in_water else -7.5
 
-        key = pygame.key.get_pressed()
-
-        if key[pygame.K_q]:
-            self.restart_game(world)
-
-        # Проверка, если персонаж на земле
-        on_ground = False
-        for tile in world.tile_list:
-            if tile[1].colliderect(self.rect.x, self.rect.y + 1, self.width, self.height):
-                on_ground = True
-
-        # Прыжок только если персонаж на земле
-        if key[pygame.K_SPACE] and on_ground and not self.jumped:
-            self.vel_y = -12
+        if keys[pygame.K_SPACE] and not self.jumped:
+            self.vel_y = jump_force
             self.jumped = True
-
-        if not key[pygame.K_SPACE]:
+        if not keys[pygame.K_SPACE]:
             self.jumped = False
-
-        if key[pygame.K_LEFT]:
-            dx -= 3.5
+        if keys[pygame.K_LEFT]:
+            dx -= speed
             self.count += 1
             self.direction = -1
-        if key[pygame.K_RIGHT]:
-            dx += 3.5
+        if keys[pygame.K_RIGHT]:
+            dx += speed
             self.count += 1
             self.direction = 1
-        if not key[pygame.K_LEFT] and not key[pygame.K_RIGHT]:
+        if not keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT]:
             self.count = 0
             self.player_anim_count = 0
             if self.direction == 1:
                 self.image = self.walk_right[self.player_anim_count]
             if self.direction == -1:
                 self.image = self.walk_left[self.player_anim_count]
-
         if self.count > walk_cooldown:
             self.count = 0
             self.player_anim_count += 1
@@ -205,7 +194,7 @@ class Player(pygame.sprite.Sprite):
             self.vel_y = 10
         dy += self.vel_y
 
-        for tile in world.tile_list:
+        for tile in world.ground_tiles:
             if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
                 dx = 0
             if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
@@ -219,26 +208,13 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += dx
         self.rect.y += dy
 
-        self.collect_coins(world)
-
         surface.blit(self.image, self.rect)
+        pygame.draw.rect(surface, (0, 0, 0), (self.rect.x, self.rect.y - 10, self.width, 5))
+        pygame.draw.rect(surface, (255, 0, 0), (self.rect.x, self.rect.y - 10, self.width * (self.health / 3), 5))
 
-    def collect_coins(self, world):
-        """Проверяем столкновение с монетами и удаляем их при сборе"""
-        for coin in world.coins[:]:  # Перебираем копию списка, чтобы удалять
-            if self.rect.colliderect(coin):
-                world.coins.remove(coin)
-                self.coin_count += 1
+    def player_dead(self):
+        surface.blit(dead_img, (self.rect.x, self.rect.y))
 
-    def restart_game(self, world):
-        """Перезапуск игры: сбрасываем монеты и счет"""
-        self.rect.x, self.rect.y = 100, 100
-        self.vel_y = 0
-        self.jumped = False
-        self.coin_count = 0
-
-        # Восстанавливаем монеты
-        world.reset_coins()
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, enemy_x, enemy_y, size):
