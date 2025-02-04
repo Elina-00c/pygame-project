@@ -1,4 +1,5 @@
 import pygame
+from pyvidplayer2 import Video
 import random
 
 pygame.init()
@@ -10,30 +11,62 @@ pygame.display.set_caption('our game')
 icone = pygame.image.load('files/icon.png')
 pygame.display.set_icon(icone)
 
-background = pygame.image.load('files/background1.png')
+background_level1 = pygame.image.load('files/background1.png')
+background_level2 = pygame.image.load('files/back.jpg')
+current_background = background_level1
+
 sound = pygame.mixer.Sound('files/music.mp3')
-dead_img = pygame.image.load('files/dead.png')
-dead_img = pygame.transform.scale(dead_img,(int(dead_img.get_width() * 0.1), int(dead_img.get_height() * 0.1)))
 sound.play(-1)
+
+dead_img = pygame.image.load('files/dead.png')
+dead_img = pygame.transform.scale(dead_img, (int(dead_img.get_width() * 0.1), int(dead_img.get_height() * 0.1)))
+
+coin_image = pygame.image.load('files/coins.png')
+coin_image = pygame.transform.scale(coin_image, (int(coin_image.get_width() * 2), int(coin_image.get_height() * 2)))
+
 start_game = False
 
+# vid = Video('files/video.mp4')
+win = pygame.display.set_mode((1280, 720))
+
 tile_size = 30
-game_over = 0
+game_over = False
 
+coin_counter = 0
+current_level = 1
 
-# def draw_grid():
-# for line in range(0, 30):
-# pygame.draw.line(surface, (255, 255, 255), (0, line * tile_size), (wight, line * tile_size))
-# pygame.draw.line(surface, (255, 255, 255), (line * tile_size, 0), (line * tile_size, height))
+level1_data = [
+    [0, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0],
+    [0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0],
+    [3, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 3],
+    [0, 0, 1, 0, 1, 3, 0, 1, 0, 3, 0, 0, 1, 0, 1],
+    [0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+    [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+    [1, 2, 1, 0, 1, 2, 2, 1, 0, 1, 2, 2, 1, 0, 1],
+    [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+]
 
+level2_data = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+    [0, 1, 0, 3, 0, 0, 3, 0, 1, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+]
 
 class World:
     def __init__(self, data):
         grass_image = pygame.image.load('files/gress.jpg')
         water_image = pygame.image.load('files/water.png')
-        coin_image = pygame.image.load('files/coin.png')  # Загружаем изображение монетки
+        coin_image = pygame.image.load('files/coin.png')
 
         self.tile_list = []
+        self.coins = []
+        self.coin_positions = []
 
         row_count = 0
         for row in data:
@@ -51,12 +84,16 @@ class World:
                     img_rect.x = col_count * tile_size
                     img_rect.y = row_count * tile_size
                     self.tile_list.append((img, img_rect))
-                elif tile == 3:  # Монетка
-                    img = pygame.transform.scale(coin_image, (tile_size // 2, tile_size // 2))  # Монетка поменьше
-                    img_rect = img.get_rect()
-                    img_rect.x = col_count * tile_size + tile_size // 4  # Центрируем в клетке
-                    img_rect.y = row_count * tile_size + tile_size // 4
-                    self.tile_list.append((img, img_rect))
+                elif tile == 3:  # Монеты
+                    img_rect = pygame.Rect(col_count * tile_size + tile_size // 4,
+                                           row_count * tile_size + tile_size // 4,
+                                           tile_size // 2, tile_size // 2)
+                    self.coins.append(img_rect)
+                    self.coin_positions.append(img_rect.copy())  # Сохраняем копию позиции
+
+                def reset_coins(self):
+                    """Восстанавливаем монеты при рестарте"""
+                    self.coins = [coin.copy() for coin in self.coin_positions]
 
                 col_count += 1
             row_count += 1
@@ -86,6 +123,15 @@ word_data = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 
+coin_image = pygame.image.load('files/coin.png')
+coin_width, coin_height = coin_image.get_size()
+coins = []
+for y, row in enumerate(word_data):
+    for x, cell in enumerate(row):
+        if cell == 3:
+            coins.append(pygame.Rect(x * tile_size, y * tile_size, coin_width, coin_height))
+
+
 world = World(word_data)
 
 
@@ -113,6 +159,9 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, player_x, player_y, size):
         pygame.sprite.Sprite.__init__(self)
         self.walk_right = []
+        self.coin_count = 0
+        self.player_start_x = player_x
+        self.player_start_y = player_y
         self.walk_left = []
         self.player_anim_count = 0
         self.count = 0
@@ -133,12 +182,15 @@ class Player(pygame.sprite.Sprite):
         self.jumped = False
         self.direction = 0
 
-    def move(self):
+    def move(self, world):
         dx = 0
         dy = 0
         walk_cooldown = 5
 
         key = pygame.key.get_pressed()
+
+        if key[pygame.K_q]:
+            self.restart_game(world)
 
         # Проверка, если персонаж на земле
         on_ground = False
@@ -199,8 +251,26 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += dx
         self.rect.y += dy
 
+        self.collect_coins(world)
+
         surface.blit(self.image, self.rect)
 
+    def collect_coins(self, world):
+        """Проверяем столкновение с монетами и удаляем их при сборе"""
+        for coin in world.coins[:]:  # Перебираем копию списка, чтобы удалять
+            if self.rect.colliderect(coin):
+                world.coins.remove(coin)
+                self.coin_count += 1
+
+    def restart_game(self, world):
+        """Перезапуск игры: сбрасываем монеты и счет"""
+        self.rect.x, self.rect.y = 100, 100
+        self.vel_y = 0
+        self.jumped = False
+        self.coin_count = 0
+
+        # Восстанавливаем монеты
+        world.reset_coins()
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, enemy_x, enemy_y, size):
@@ -285,6 +355,9 @@ running = True
 flag = True
 while running:
     clock.tick(90)
+    font = pygame.font.Font(None, 36)
+    score_text = font.render(f"Coins: {player.coin_count}", True, (255, 255, 255))
+    surface.blit(score_text, (10, 10))  # Отображаем счет в левом верхнем углу
     # start window
     if not start_game:
         for event in pygame.event.get():
@@ -315,7 +388,7 @@ while running:
 
         world.draw()
 
-        player.move()
+        player.move(world)
         enemy.draw_enemy()
         enemy1.draw_enemy()
         enemy2.draw_enemy()
