@@ -217,18 +217,44 @@ class Player(pygame.sprite.Sprite):
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, enemy_x, enemy_y, size):
+    def __init__(self, enemy_x, enemy_y, size, axis='x', move_distance=100, speed=2):
         pygame.sprite.Sprite.__init__(self)
         self.animation = []
         self.enemy_rect = [enemy_x, enemy_y]
         self.update_time = pygame.time.get_ticks()
         self.enemy_anim_count = 0
-        for i in range(1, 10):
+        for i in range(1, 11):
             img = pygame.image.load(f'files/enemy/img{i}.png')
             img = pygame.transform.scale(img, (int(img.get_width() * size), int(img.get_height() * size)))
             self.animation.append(img)
         self.image = self.animation[self.enemy_anim_count]
         self.rect = self.image.get_rect()
+        self.axis = axis
+        self.speed = speed
+        self.direction = 1
+        self.move_distance = move_distance
+        self.move_counter = 0
+
+    def draw_enemy(self):
+        surface.blit(self.animation[self.enemy_anim_count], (self.enemy_rect[0], self.enemy_rect[1]))
+
+    def animation_enemy(self):
+        animation_clock = 125
+        if pygame.time.get_ticks() - self.update_time > animation_clock:
+            self.update_time = pygame.time.get_ticks()
+            self.enemy_anim_count += 1
+            if self.enemy_anim_count == len(self.animation):
+                self.enemy_anim_count = 0
+
+    def update(self):
+        if self.axis == 'x':
+            self.enemy_rect[0] += self.speed * self.direction
+        else:
+            self.enemy_rect[1] += self.speed * self.direction
+        self.move_counter += self.speed
+        if self.move_counter >= self.move_distance:
+            self.direction *= -1
+            self.move_counter = 0
 
     def draw_enemy(self):
         surface.blit(self.animation[self.enemy_anim_count], self.enemy_rect)
