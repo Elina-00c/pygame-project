@@ -268,45 +268,26 @@ class Enemy(pygame.sprite.Sprite):
             self.enemy_anim_count = 0
 
 
-class Bullet(pygame.sprite.Sprite):
-    def init(self, x, y):
-        pygame.sprite.Sprite.init(self)
-
-    def func(self):
-        pass
-
-
-class HealthBar():
-    def __init__(self, x, y, health, max_health):
+class Coin(pygame.sprite.Sprite):
+    def __init__(self, x, y, size):
+        pygame.sprite.Sprite.__init__(self)
         self.x = x
         self.y = y
-        self.health = health
-        self.max_health = max_health
+        self.size = size
+        self.coin_flag = True
+        self.image = pygame.transform.scale(coin_image,
+                                            (int(coin_image.get_width() * size), int(coin_image.get_height() * size)))
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
-    def draw(self, health):
-        # update with new health
-        self.health = health
-        # calculate health ratio
-        ratio = self.health / self.max_health
-        # pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
-        # pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
-        # pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
+    def colision(self):
+        global coin_counter
+        if self.coin_flag and self.rect.colliderect(player.rect):
+            self.coin_flag = False
+            coin_counter += 1
 
-
-class Exit:
-    pass
-
-
-class Title:
-    pass
-
-
-class Level:
-    pass
-
-
-class Barrier:
-    pass
+    def draw(self):
+        if self.coin_flag:
+            surface.blit(self.image, (self.x, self.y))
 
 
 player = Player(0, 160, 0.4)
